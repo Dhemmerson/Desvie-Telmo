@@ -1,3 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<title>Telmo Runner</title>
+
+<style>
+
+body{
+margin:0;
+overflow:hidden;
+font-family:Arial;
+background:linear-gradient(#7b3ff2,#4a148c);
+}
+
+#game{
+position:relative;
+width:100vw;
+height:100vh;
+overflow:hidden;
+}
+
+#ground{
+position:absolute;
+bottom:0;
+width:200%;
+height:120px;
+background:repeating-linear-gradient(
+90deg,
+#333 0px,
+#333 40px,
+#444 40px,
+#444 80px
+);
+animation:groundMove 2s linear infinite;
+}
+
+@keyframes groundMove{
+0%{background-position-x:0}
+100%{background-position-x:-80px}
+}
+
+#player{
+position:absolute;
+bottom:120px;
+left:120px;
+width:90px;
+}
+
+.obstacle{
+position:absolute;
+bottom:120px;
+font-size:50px;
+}
+
+.coin{
+position:absolute;
+width:35px;
+animation:spin 1s linear infinite;
+}
+
+@keyframes spin{
+0%{transform:rotateY(0)}
+100%{transform:rotateY(360deg)}
+}
+
+.cloud{
+position:absolute;
+width:140px;
+opacity:0.8;
+animation:cloudMove linear infinite;
+}
+
+@keyframes cloudMove{
+from{transform:translateX(100vw)}
+to{transform:translateX(-200px)}
+}
+
+.bird{
+position:absolute;
+width:60px;
+animation:birdMove linear infinite;
+}
+
+@keyframes birdMove{
+from{transform:translateX(100vw)}
+to{transform:translateX(-200px)}
+}
+
+#menu{
+position:absolute;
+top:50%;
+left:50%;
+transform:translate(-50%,-50%);
+text-align:center;
+color:white;
+}
+
+.character{
+display:inline-block;
+margin:20px;
+cursor:pointer;
+transition:0.3s;
+}
+
+.character:hover{
+transform:scale(1.2);
+}
+
+#menu img{
+width:120px;
+}
+
+#hud{
+position:absolute;
+top:10px;
+left:10px;
+color:white;
+font-size:18px;
+}
+
+#gameover{
+position:absolute;
+top:50%;
+left:50%;
+transform:translate(-50%,-50%) scale(0);
+background:rgba(0,0,0,0.7);
+padding:30px;
+color:white;
+border-radius:10px;
+text-align:center;
+}
+
+#gameover.show{
+animation:over 0.5s forwards;
+}
+
+@keyframes over{
+to{transform:translate(-50%,-50%) scale(1)}
+}
+
+button{
+padding:10px 20px;
+font-size:18px;
+cursor:pointer;
+}
+
 #rotate{
 position:fixed;
 top:0;
@@ -23,3 +170,393 @@ animation:giro 2s infinite;
 50%{transform:rotate(90deg)}
 100%{transform:rotate(0)}
 }
+
+</style>
+
+</head>
+
+<body>
+
+<div id="rotate">
+
+<div class="rotate-box">
+
+📱  
+<br><br>
+<strong>Gire o celular</strong>
+<br>
+para jogar no modo horizontal
+
+</div>
+
+</div>
+
+<div id="game">
+
+<div id="ground"></div>
+
+<img id="player">
+
+<div id="hud">
+Score: <span id="score">0</span><br>
+Moedas: <span id="coins">0</span>
+</div>
+
+<div id="menu">
+
+<h1>Escolha o Personagem</h1>
+
+<div class="character" onclick="selectPlayer('telmo')">
+<img src="https://i.postimg.cc/ZKG0RzJ2/original-viko-(27).png">
+<div>Telmo</div>
+</div>
+
+<div class="character" onclick="selectPlayer('logo')">
+<img src="https://i.postimg.cc/xj71xVNq/original-viko-(29).png">
+<div>Logo</div>
+</div>
+
+<div class="character" onclick="selectPlayer('halloween')">
+<img src="https://i.postimg.cc/vB5yhhD9/original-viko-(28).png">
+<div>Telmo Halloween</div>
+</div>
+
+<div class="character" onclick="selectPlayer('ferias')">
+<img src="https://i.postimg.cc/5tTvL4Fm/original-viko-(29).png">
+<div>Telmo Férias</div>
+</div>
+
+</div>
+
+<div id="gameover">
+
+<h1>GAME OVER</h1>
+
+<p>Score: <span id="finalScore"></span></p>
+
+<button onclick="location.reload()">Jogar novamente</button>
+
+</div>
+
+</div>
+
+<script>
+
+let player=document.getElementById("player")
+
+let jumping=false
+let velocity=0
+let gravity=1.2
+
+let speed=6
+let score=0
+let coinScore=0
+
+let obstacles=[]
+let coins=[]
+
+let playing=false
+
+const jumpSound=new Audio("https://assets.mixkit.co/sfx/preview/mixkit-quick-jump-arcade-game-239.mp3")
+const hitSound=new Audio("https://assets.mixkit.co/sfx/preview/mixkit-arcade-retro-game-over-213.mp3")
+const coinSound=new Audio("https://assets.mixkit.co/sfx/preview/mixkit-game-ball-tap-2073.mp3")
+
+function selectPlayer(p){
+
+document.getElementById("menu").style.display="none"
+
+if(p=="telmo"){
+player.src="https://i.postimg.cc/ZKG0RzJ2/original-viko-(27).png"
+}
+
+if(p=="logo"){
+player.src="https://i.postimg.cc/xj71xVNq/original-viko-(29).png"
+}
+
+if(p=="halloween"){
+player.src="https://i.postimg.cc/vB5yhhD9/original-viko-(28).png"
+}
+
+if(p=="ferias"){
+player.src="https://i.postimg.cc/5tTvL4Fm/original-viko-(29).png"
+}
+
+startGame()
+
+}
+
+function startGame(){
+
+playing=true
+
+spawnObstacle()
+spawnCoin()
+spawnCloud()
+spawnBird()
+
+setInterval(()=>{
+
+if(!playing)return
+
+score+=10
+document.getElementById("score").innerText=score
+
+},1000)
+
+gameLoop()
+
+}
+
+function spawnObstacle(){
+
+function create(){
+
+if(!playing)return
+
+let emojis=["🧾","👥","📞"]
+
+let o=document.createElement("div")
+
+o.className="obstacle"
+o.innerText=emojis[Math.floor(Math.random()*emojis.length)]
+
+o.style.left=window.innerWidth+"px"
+
+document.getElementById("game").appendChild(o)
+
+obstacles.push(o)
+
+let delay=1000+Math.random()*2000
+
+setTimeout(create,delay)
+
+}
+
+create()
+
+}
+
+function spawnCoin(){
+
+setInterval(()=>{
+
+if(!playing)return
+
+let c=document.createElement("img")
+
+c.src="https://cdn-icons-png.flaticon.com/512/138/138292.png"
+
+c.className="coin"
+
+c.style.left=window.innerWidth+"px"
+c.style.bottom=(170+Math.random()*120)+"px"
+
+document.getElementById("game").appendChild(c)
+
+coins.push(c)
+
+},2000)
+
+}
+
+function checkOrientation(){
+
+if(window.innerHeight > window.innerWidth){
+
+document.getElementById("rotate").style.display="flex"
+
+}else{
+
+document.getElementById("rotate").style.display="none"
+
+}
+
+}
+
+window.addEventListener("resize",checkOrientation)
+
+checkOrientation()
+
+
+function spawnCloud(){
+
+setInterval(()=>{
+
+let cloud=document.createElement("img")
+
+cloud.src="https://i.postimg.cc/9F5RcgGW/Titulo.png"
+
+cloud.className="cloud"
+
+cloud.style.top=(20+Math.random()*120)+"px"
+
+cloud.style.animationDuration=(25+Math.random()*20)+"s"
+
+document.getElementById("game").appendChild(cloud)
+
+setTimeout(()=>{cloud.remove()},50000)
+
+},5000)
+
+}
+
+function spawnBird(){
+
+setInterval(()=>{
+
+let bird=document.createElement("img")
+
+bird.src="https://i.postimg.cc/K8dpv2vq/Titulo-(1).png"
+
+bird.className="bird"
+
+bird.style.top=(80+Math.random()*120)+"px"
+
+bird.style.animationDuration=(10+Math.random()*6)+"s"
+
+document.getElementById("game").appendChild(bird)
+
+setTimeout(()=>{bird.remove()},20000)
+
+},7000)
+
+}
+
+function jump(){
+
+if(jumping)return
+
+jumpSound.currentTime=0
+jumpSound.play()
+
+jumping=true
+velocity=20
+
+}
+
+function collision(a,b){
+
+let aRect=a.getBoundingClientRect()
+let bRect=b.getBoundingClientRect()
+
+let paddingX=bRect.width*0.3
+let paddingY=bRect.height*0.3
+
+let bx1=bRect.left+paddingX
+let bx2=bRect.right-paddingX
+let by1=bRect.top+paddingY
+let by2=bRect.bottom-paddingY
+
+return !(
+
+aRect.right<bx1||
+aRect.left>bx2||
+aRect.bottom<by1||
+aRect.top>by2
+
+)
+
+}
+
+function gameLoop(){
+
+if(!playing)return
+
+if(jumping){
+
+velocity-=gravity
+
+let bottom=parseInt(player.style.bottom||120)
+
+bottom+=velocity
+
+if(bottom<=120){
+
+bottom=120
+jumping=false
+
+}
+
+player.style.bottom=bottom+"px"
+
+}
+
+obstacles.forEach((o,i)=>{
+
+o.style.left=(o.offsetLeft-speed)+"px"
+
+if(o.offsetLeft<-100){
+
+o.remove()
+obstacles.splice(i,1)
+
+}
+
+if(collision(player,o)){
+
+hitSound.play()
+
+setTimeout(gameOver,10)
+
+}
+
+})
+
+coins.forEach((c,i)=>{
+
+c.style.left=(c.offsetLeft-speed)+"px"
+
+if(c.offsetLeft<-50){
+
+c.remove()
+coins.splice(i,1)
+
+}
+
+if(collision(player,c)){
+
+coinSound.play()
+
+coinScore++
+
+document.getElementById("coins").innerText=coinScore
+
+c.remove()
+coins.splice(i,1)
+
+}
+
+})
+
+requestAnimationFrame(gameLoop)
+
+}
+
+function gameOver(){
+
+playing=false
+
+document.getElementById("finalScore").innerText=score
+
+document.getElementById("gameover").classList.add("show")
+
+}
+
+document.addEventListener("keydown",e=>{
+
+if(e.code=="Space"||e.key=="ArrowUp"){
+jump()
+}
+
+})
+
+document.addEventListener("touchstart",()=>{
+
+jump()
+
+})
+
+</script>
+
+</body>
+</html>
