@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt">
 <head>
 <meta charset="UTF-8">
 <title>Desvie dos Problemas</title>
@@ -10,70 +10,55 @@ body{
 margin:0;
 overflow:hidden;
 font-family:Arial;
-text-align:center;
-color:white;
-background:#7b00ff;
-transition:background 1s;
+background:#6a0dad;
 }
 
 #game{
-display:none;
 position:relative;
 width:100vw;
 height:100vh;
+overflow:hidden;
 }
 
 #player{
 position:absolute;
 bottom:60px;
 width:80px;
-transition:transform .2s,left .2s;
+left:50%;
+transform:translateX(-50%);
 }
 
 .obstacle{
 position:absolute;
-width:60px;
+width:70px;
 }
 
-#score,#record{
+#hud{
 position:absolute;
-top:20px;
-font-size:20px;
+top:10px;
+left:10px;
+color:white;
+font-size:18px;
 }
-
-#score{left:20px}
-#record{right:20px}
 
 #menu{
 position:absolute;
 top:50%;
 left:50%;
 transform:translate(-50%,-50%);
+text-align:center;
+color:white;
 }
 
-.characterBox{
-display:inline-block;
-margin:25px;
-cursor:pointer;
-transition:.3s;
-}
-
-.characterBox:hover{
-transform:scale(1.1) rotate(3deg);
-}
-
-.character{
+#menu img{
 width:120px;
-display:block;
+margin:10px;
+cursor:pointer;
+transition:0.3s;
 }
 
-.characterName{
-margin-top:8px;
-font-weight:bold;
-}
-
-#lastScore{
-margin-top:20px;
+#menu img:hover{
+transform:scale(1.1);
 }
 
 #gameover{
@@ -81,18 +66,27 @@ position:absolute;
 top:50%;
 left:50%;
 transform:translate(-50%,-50%);
+color:white;
+text-align:center;
 display:none;
+}
+
+button{
+padding:10px 20px;
+font-size:18px;
+cursor:pointer;
 }
 
 .explosion{
 position:absolute;
-font-size:90px;
-animation:boom .6s forwards;
+width:120px;
+pointer-events:none;
+animation:boom 0.6s forwards;
 }
 
 @keyframes boom{
-0%{transform:scale(1);opacity:1}
-100%{transform:scale(3);opacity:0}
+0%{transform:scale(0)}
+100%{transform:scale(1.8);opacity:0}
 }
 
 </style>
@@ -100,38 +94,34 @@ animation:boom .6s forwards;
 
 <body>
 
-<div id="menu">
-
-<h1>Escolha seu personagem</h1>
-
-<div class="characterBox" onclick="startGame('https://i.postimg.cc/ZKG0RzJ2/original-viko-(27).png')">
-<img class="character" src="https://i.postimg.cc/ZKG0RzJ2/original-viko-(27).png">
-<div class="characterName">TELMO</div>
-</div>
-
-<div class="characterBox" onclick="startGame('https://i.postimg.cc/xj71xVNq/original-viko-(29).png')">
-<img class="character" src="https://i.postimg.cc/xj71xVNq/original-viko-(29).png">
-<div class="characterName">LOGO</div>
-</div>
-
-<div id="lastScore"></div>
-
-</div>
-
 <div id="game">
 
-<div id="score">Score: 0</div>
-<div id="record">Recorde: 0</div>
-
 <img id="player">
+
+<div id="hud">
+⏱ Tempo: <span id="time">0</span><br>
+🏆 Score: <span id="score">0</span><br>
+🥇 Recorde: <span id="record">0</span>
+</div>
+
+<div id="menu">
+
+<h1>Escolha o Personagem</h1>
+
+<img onclick="selectPlayer('telmo')" src="https://i.postimg.cc/ZKG0RzJ2/original-viko-(27).png">
+<div>Telmo</div>
+
+<img onclick="selectPlayer('logo')" src="https://i.postimg.cc/xj71xVNq/original-viko-(29).png">
+<div>Logo</div>
+
+</div>
 
 <div id="gameover">
 
 <h1>GAME OVER</h1>
 
-<div id="finalScore"></div>
-
-<br>
+<p>Score: <span id="finalScore"></span></p>
+<p>Última rodada: <span id="lastScore"></span></p>
 
 <button onclick="restart()">Jogar novamente</button>
 
@@ -139,139 +129,150 @@ animation:boom .6s forwards;
 
 </div>
 
-<audio id="music" loop>
-<source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_3b5c9c02bb.mp3">
-</audio>
-
 <script>
 
-let player=document.getElementById("player")
-let menu=document.getElementById("menu")
 let game=document.getElementById("game")
-let scoreEl=document.getElementById("score")
-let recordEl=document.getElementById("record")
-let music=document.getElementById("music")
+let player=document.getElementById("player")
 
-let playerX
-let obstacles=[]
 let score=0
-let speed=4
-let playing=false
-
+let time=0
 let record=localStorage.getItem("record")||0
-recordEl.innerHTML="Recorde: "+record
+let lastScore=0
 
-let lastScore=localStorage.getItem("lastScore")||0
+let speed=3
+let obstacles=[]
+let playing=false
+let playerX=window.innerWidth/2
 
-if(lastScore>0){
-document.getElementById("lastScore").innerHTML="Última rodada: "+lastScore
+let colors=["#6a0dad","#2ecc71","#ff8c00","#87cefa"]
+
+document.getElementById("record").innerText=record
+
+function selectPlayer(p){
+
+document.getElementById("menu").style.display="none"
+
+if(p=="telmo"){
+player.src="https://i.postimg.cc/ZKG0RzJ2/original-viko-(27).png"
 }
 
-let obstacleImages=[
+if(p=="logo"){
+player.src="https://i.postimg.cc/xj71xVNq/original-viko-(29).png"
+}
+
+playerX = window.innerWidth/2
+player.style.left = playerX + "px"
+
+startGame()
+
+}
+
+function startGame(){
+
+playing=true
+score=0
+time=0
+speed=3
+obstacles=[]
+
+spawnObstacle()
+
+setInterval(()=>{
+
+if(!playing)return
+
+time++
+score+=5
+
+document.getElementById("time").innerText=time
+document.getElementById("score").innerText=score
+
+if(score%70==0){
+spawnObstacle()
+speed+=0.5
+}
+
+if(score%120==0){
+document.body.style.background=
+colors[Math.floor(Math.random()*colors.length)]
+}
+
+},1000)
+
+gameLoop()
+
+}
+
+function spawnObstacle(){
+
+setInterval(()=>{
+
+if(!playing)return
+
+let imgs=[
 "https://i.postimg.cc/ZKSq3t9Q/2.png",
 "https://i.postimg.cc/DzHG3jxC/5.png",
 "https://i.postimg.cc/tgKbjWWK/4.png",
 "https://i.postimg.cc/vHtZtq9J/3.png"
 ]
 
-function startGame(img){
+let o=document.createElement("img")
+o.src=imgs[Math.floor(Math.random()*imgs.length)]
+o.className="obstacle"
 
-menu.style.display="none"
-game.style.display="block"
+o.style.left=Math.random()*(window.innerWidth-80)+"px"
+o.style.top="-80px"
 
-player.src=img
+game.appendChild(o)
+obstacles.push(o)
 
-playerX=window.innerWidth/2
-player.style.left=playerX+"px"
+},1200)
 
-score=0
-speed=4
-playing=true
+}
 
-music.play()
-
-spawnLoop=setInterval(spawnObstacle,900)
-gameLoop=setInterval(update,20)
-
-scoreLoop=setInterval(()=>{
+function gameLoop(){
 
 if(!playing)return
 
-score+=10
-speed+=0.25
+obstacles.forEach((o,i)=>{
 
-scoreEl.innerHTML="Score: "+score
-
-if(score>record){
-record=score
-localStorage.setItem("record",record)
-recordEl.innerHTML="Recorde: "+record
-}
-
-changeBackground()
-
-},1000)
-
-}
-
-function spawnObstacle(){
-
-let obs=document.createElement("img")
-
-obs.src=obstacleImages[Math.floor(Math.random()*3)]
-
-obs.className="obstacle"
-
-obs.style.left=Math.random()*window.innerWidth+"px"
-
-obs.style.top="-80px"
-
-game.appendChild(obs)
-
-obstacles.push(obs)
-
-}
-
-function update(){
-
-obstacles.forEach((obs,i)=>{
-
-let top=parseInt(obs.style.top)
-
-obs.style.top=(top+speed)+"px"
-
-let playerRect=player.getBoundingClientRect()
-let obsRect=obs.getBoundingClientRect()
-
-if(
-playerRect.left<obsRect.right &&
-playerRect.right>obsRect.left &&
-playerRect.top<obsRect.bottom &&
-playerRect.bottom>obsRect.top
-){
-explode()
-endGame()
-}
+let top=o.offsetTop+speed
+o.style.top=top+"px"
 
 if(top>window.innerHeight){
-obs.remove()
+o.remove()
 obstacles.splice(i,1)
 }
 
+let rect1=player.getBoundingClientRect()
+let rect2=o.getBoundingClientRect()
+
+if(
+rect1.left<rect2.right &&
+rect1.right>rect2.left &&
+rect1.top<rect2.bottom &&
+rect1.bottom>rect2.top
+){
+
+explode()
+gameOver()
+
+}
+
 })
+
+requestAnimationFrame(gameLoop)
 
 }
 
 function explode(){
 
-let boom=document.createElement("div")
-
-boom.innerHTML="💥"
-
+let boom=document.createElement("img")
+boom.src="https://cdn-icons-png.flaticon.com/512/463/463612.png"
 boom.className="explosion"
 
-boom.style.left=player.style.left
-boom.style.bottom="60px"
+boom.style.left=player.offsetLeft+"px"
+boom.style.top=player.offsetTop+"px"
 
 game.appendChild(boom)
 
@@ -279,19 +280,18 @@ setTimeout(()=>boom.remove(),600)
 
 }
 
-function endGame(){
+function gameOver(){
 
 playing=false
+lastScore=score
 
-clearInterval(spawnLoop)
-clearInterval(gameLoop)
-clearInterval(scoreLoop)
+if(score>record){
+record=score
+localStorage.setItem("record",record)
+}
 
-music.pause()
-
-localStorage.setItem("lastScore",score)
-
-document.getElementById("finalScore").innerHTML="Pontuação: "+score
+document.getElementById("finalScore").innerText=score
+document.getElementById("lastScore").innerText=lastScore
 
 document.getElementById("gameover").style.display="block"
 
@@ -299,61 +299,53 @@ document.getElementById("gameover").style.display="block"
 
 function restart(){
 
-game.style.display="none"
 document.getElementById("gameover").style.display="none"
-menu.style.display="block"
+document.getElementById("menu").style.display="block"
 
-lastScore=localStorage.getItem("lastScore")
-
-document.getElementById("lastScore").innerHTML="Última rodada: "+lastScore+"<br>Tente bater o recorde!"
+obstacles.forEach(o=>o.remove())
+obstacles=[]
 
 }
 
-document.addEventListener("keydown",(e)=>{
+document.addEventListener("keydown",e=>{
 
 if(!playing)return
 
-if(e.key=="ArrowLeft"||e.key=="a")playerX-=40
-if(e.key=="ArrowRight"||e.key=="d")playerX+=40
+let playerWidth = player.offsetWidth
 
-player.style.left=playerX+"px"
-
-})
-
-let startX=0
-
-document.addEventListener("touchstart",(e)=>{
-
-startX=e.touches[0].clientX
-
-})
-
-document.addEventListener("touchmove",(e)=>{
-
-if(!playing)return
-
-let moveX=e.touches[0].clientX
-
-playerX=moveX
-
-player.style.left=playerX+"px"
-
-})
-
-let colors=[
-"#7b00ff",
-"#00c853",
-"#ff6d00",
-"#40c4ff"
-]
-
-function changeBackground(){
-
-let color=colors[Math.floor(Math.random()*colors.length)]
-
-document.body.style.background=color
-
+if(e.key=="ArrowLeft"){
+playerX -= 40
 }
+
+if(e.key=="ArrowRight"){
+playerX += 40
+}
+
+let min = 0
+let max = window.innerWidth - playerWidth
+
+playerX = Math.max(min, Math.min(max, playerX))
+
+player.style.left = playerX + "px"
+
+})
+
+game.addEventListener("touchmove",e=>{
+
+let touch = e.touches[0]
+
+let playerWidth = player.offsetWidth
+
+playerX = touch.clientX - (playerWidth/2)
+
+let min = 0
+let max = window.innerWidth - playerWidth
+
+playerX = Math.max(min, Math.min(max, playerX))
+
+player.style.left = playerX + "px"
+
+})
 
 </script>
 
