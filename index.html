@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
+
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta charset="UTF-8">
 <title>Telmo Runner</title>
@@ -20,6 +21,31 @@ position:relative;
 width:100vw;
 height:100dvh;
 overflow:hidden;
+}
+
+#orientationMenu{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:linear-gradient(#7b3ff2,#4a148c);
+display:flex;
+flex-direction:column;
+align-items:center;
+justify-content:center;
+gap:20px;
+color:white;
+z-index:10000;
+text-align:center;
+}
+
+#orientationMenu button{
+font-size:22px;
+padding:15px 30px;
+border:none;
+border-radius:10px;
+cursor:pointer;
 }
 
 #ground{
@@ -179,6 +205,20 @@ animation:giro 2s infinite;
 
 <body>
 
+<div id="orientationMenu">
+
+<h1>Como deseja jogar?</h1>
+
+<button onclick="setOrientation('horizontal')">
+📱 Horizontal
+</button>
+
+<button onclick="setOrientation('vertical')">
+📱 Vertical
+</button>
+
+</div>
+
 <div id="rotate">
 
 <div class="rotate-box">
@@ -243,6 +283,38 @@ Moedas: <span id="coins">0</span>
 </div>
 
 <script>
+
+let orientationMode="horizontal"
+
+function setOrientation(mode){
+
+orientationMode=mode
+
+document.getElementById("orientationMenu").style.display="none"
+
+checkOrientation()
+
+}
+
+function checkOrientation(){
+
+if(orientationMode==="horizontal"){
+
+if(window.innerHeight > window.innerWidth){
+document.getElementById("rotate").style.display="flex"
+}else{
+document.getElementById("rotate").style.display="none"
+}
+
+}else{
+
+document.getElementById("rotate").style.display="none"
+
+}
+
+}
+
+window.addEventListener("resize",checkOrientation)
 
 let player=document.getElementById("player")
 
@@ -360,25 +432,6 @@ coins.push(c)
 },2000)
 
 }
-
-function checkOrientation(){
-
-if(window.innerHeight > window.innerWidth){
-
-document.getElementById("rotate").style.display="flex"
-
-}else{
-
-document.getElementById("rotate").style.display="none"
-
-}
-
-}
-
-window.addEventListener("resize",checkOrientation)
-
-checkOrientation()
-
 
 function spawnCloud(){
 
@@ -553,9 +606,7 @@ jump()
 })
 
 document.addEventListener("touchstart",()=>{
-
 jump()
-
 })
 
 </script>
