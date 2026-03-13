@@ -2,7 +2,7 @@
 <html lang="pt">
 <head>
 <meta charset="UTF-8">
-<title>Desvie dos Problemas</title>
+<title>Telmo Runner</title>
 
 <style>
 
@@ -10,7 +10,7 @@ body{
 margin:0;
 overflow:hidden;
 font-family:Arial;
-background:#6a0dad;
+background:linear-gradient(#7b3ff2,#4a148c);
 }
 
 #game{
@@ -20,25 +20,71 @@ height:100vh;
 overflow:hidden;
 }
 
+#ground{
+position:absolute;
+bottom:0;
+width:200%;
+height:120px;
+background:repeating-linear-gradient(
+90deg,
+#333 0px,
+#333 40px,
+#444 40px,
+#444 80px
+);
+animation:groundMove 2s linear infinite;
+}
+
+@keyframes groundMove{
+0%{background-position-x:0}
+100%{background-position-x:-80px}
+}
+
 #player{
 position:absolute;
-bottom:60px;
-width:80px;
-left:50%;
-transform:translateX(-50%);
+bottom:120px;
+left:120px;
+width:90px;
 }
 
 .obstacle{
 position:absolute;
-width:70px;
+bottom:120px;
+font-size:50px;
 }
 
-#hud{
+.coin{
 position:absolute;
-top:10px;
-left:10px;
-color:white;
-font-size:18px;
+width:35px;
+animation:spin 1s linear infinite;
+}
+
+@keyframes spin{
+0%{transform:rotateY(0)}
+100%{transform:rotateY(360deg)}
+}
+
+.cloud{
+position:absolute;
+width:140px;
+opacity:0.8;
+animation:cloudMove linear infinite;
+}
+
+@keyframes cloudMove{
+from{transform:translateX(100vw)}
+to{transform:translateX(-200px)}
+}
+
+.bird{
+position:absolute;
+width:60px;
+animation:birdMove linear infinite;
+}
+
+@keyframes birdMove{
+from{transform:translateX(100vw)}
+to{transform:translateX(-200px)}
 }
 
 #menu{
@@ -50,25 +96,47 @@ text-align:center;
 color:white;
 }
 
-#menu img{
-width:120px;
-margin:10px;
+.character{
+display:inline-block;
+margin:20px;
 cursor:pointer;
 transition:0.3s;
 }
 
-#menu img:hover{
-transform:scale(1.1);
+.character:hover{
+transform:scale(1.2);
+}
+
+#menu img{
+width:120px;
+}
+
+#hud{
+position:absolute;
+top:10px;
+left:10px;
+color:white;
+font-size:18px;
 }
 
 #gameover{
 position:absolute;
 top:50%;
 left:50%;
-transform:translate(-50%,-50%);
+transform:translate(-50%,-50%) scale(0);
+background:rgba(0,0,0,0.7);
+padding:30px;
 color:white;
+border-radius:10px;
 text-align:center;
-display:none;
+}
+
+#gameover.show{
+animation:over 0.5s forwards;
+}
+
+@keyframes over{
+to{transform:translate(-50%,-50%) scale(1)}
 }
 
 button{
@@ -77,42 +145,46 @@ font-size:18px;
 cursor:pointer;
 }
 
-.explosion{
-position:absolute;
-width:120px;
-pointer-events:none;
-animation:boom 0.6s forwards;
-}
-
-@keyframes boom{
-0%{transform:scale(0)}
-100%{transform:scale(1.8);opacity:0}
-}
-
 </style>
+
 </head>
 
 <body>
 
 <div id="game">
 
+<div id="ground"></div>
+
 <img id="player">
 
 <div id="hud">
-⏱ Tempo: <span id="time">0</span><br>
-🏆 Score: <span id="score">0</span><br>
-🥇 Recorde: <span id="record">0</span>
+Score: <span id="score">0</span><br>
+Moedas: <span id="coins">0</span>
 </div>
 
 <div id="menu">
 
 <h1>Escolha o Personagem</h1>
 
-<img onclick="selectPlayer('telmo')" src="https://i.postimg.cc/ZKG0RzJ2/original-viko-(27).png">
+<div class="character" onclick="selectPlayer('telmo')">
+<img src="https://i.postimg.cc/ZKG0RzJ2/original-viko-(27).png">
 <div>Telmo</div>
+</div>
 
-<img onclick="selectPlayer('logo')" src="https://i.postimg.cc/xj71xVNq/original-viko-(29).png">
+<div class="character" onclick="selectPlayer('logo')">
+<img src="https://i.postimg.cc/xj71xVNq/original-viko-(29).png">
 <div>Logo</div>
+</div>
+
+<div class="character" onclick="selectPlayer('halloween')">
+<img src="https://i.postimg.cc/vB5yhhD9/original-viko-(28).png">
+<div>Telmo Halloween</div>
+</div>
+
+<div class="character" onclick="selectPlayer('ferias')">
+<img src="https://i.postimg.cc/5tTvL4Fm/original-viko-(29).png">
+<div>Telmo Férias</div>
+</div>
 
 </div>
 
@@ -121,9 +193,8 @@ animation:boom 0.6s forwards;
 <h1>GAME OVER</h1>
 
 <p>Score: <span id="finalScore"></span></p>
-<p>Última rodada: <span id="lastScore"></span></p>
 
-<button onclick="restart()">Jogar novamente</button>
+<button onclick="location.reload()">Jogar novamente</button>
 
 </div>
 
@@ -131,22 +202,24 @@ animation:boom 0.6s forwards;
 
 <script>
 
-let game=document.getElementById("game")
 let player=document.getElementById("player")
 
+let jumping=false
+let velocity=0
+let gravity=1.2
+
+let speed=6
 let score=0
-let time=0
-let record=localStorage.getItem("record")||0
-let lastScore=0
+let coinScore=0
 
-let speed=3
 let obstacles=[]
+let coins=[]
+
 let playing=false
-let playerX=window.innerWidth/2
 
-let colors=["#6a0dad","#2ecc71","#ff8c00","#87cefa"]
-
-document.getElementById("record").innerText=record
+const jumpSound=new Audio("https://assets.mixkit.co/sfx/preview/mixkit-quick-jump-arcade-game-239.mp3")
+const hitSound=new Audio("https://assets.mixkit.co/sfx/preview/mixkit-arcade-retro-game-over-213.mp3")
+const coinSound=new Audio("https://assets.mixkit.co/sfx/preview/mixkit-game-ball-tap-2073.mp3")
 
 function selectPlayer(p){
 
@@ -160,8 +233,13 @@ if(p=="logo"){
 player.src="https://i.postimg.cc/xj71xVNq/original-viko-(29).png"
 }
 
-playerX = window.innerWidth/2
-player.style.left = playerX + "px"
+if(p=="halloween"){
+player.src="https://i.postimg.cc/vB5yhhD9/original-viko-(28).png"
+}
+
+if(p=="ferias"){
+player.src="https://i.postimg.cc/5tTvL4Fm/original-viko-(29).png"
+}
 
 startGame()
 
@@ -170,32 +248,18 @@ startGame()
 function startGame(){
 
 playing=true
-score=0
-time=0
-speed=3
-obstacles=[]
 
 spawnObstacle()
+spawnCoin()
+spawnCloud()
+spawnBird()
 
 setInterval(()=>{
 
 if(!playing)return
 
-time++
-score+=5
-
-document.getElementById("time").innerText=time
+score+=10
 document.getElementById("score").innerText=score
-
-if(score%70==0){
-spawnObstacle()
-speed+=0.5
-}
-
-if(score%120==0){
-document.body.style.background=
-colors[Math.floor(Math.random()*colors.length)]
-}
 
 },1000)
 
@@ -205,28 +269,133 @@ gameLoop()
 
 function spawnObstacle(){
 
+function create(){
+
+if(!playing)return
+
+let emojis=["🧾","👥","📞"]
+
+let o=document.createElement("div")
+
+o.className="obstacle"
+o.innerText=emojis[Math.floor(Math.random()*emojis.length)]
+
+o.style.left=window.innerWidth+"px"
+
+document.getElementById("game").appendChild(o)
+
+obstacles.push(o)
+
+let delay=1000+Math.random()*2000
+
+setTimeout(create,delay)
+
+}
+
+create()
+
+}
+
+function spawnCoin(){
+
 setInterval(()=>{
 
 if(!playing)return
 
-let imgs=[
-"https://i.postimg.cc/ZKSq3t9Q/2.png",
-"https://i.postimg.cc/DzHG3jxC/5.png",
-"https://i.postimg.cc/tgKbjWWK/4.png",
-"https://i.postimg.cc/vHtZtq9J/3.png"
-]
+let c=document.createElement("img")
 
-let o=document.createElement("img")
-o.src=imgs[Math.floor(Math.random()*imgs.length)]
-o.className="obstacle"
+c.src="https://cdn-icons-png.flaticon.com/512/138/138292.png"
 
-o.style.left=Math.random()*(window.innerWidth-80)+"px"
-o.style.top="-80px"
+c.className="coin"
 
-game.appendChild(o)
-obstacles.push(o)
+c.style.left=window.innerWidth+"px"
+c.style.bottom=(170+Math.random()*120)+"px"
 
-},1200)
+document.getElementById("game").appendChild(c)
+
+coins.push(c)
+
+},2000)
+
+}
+
+function spawnCloud(){
+
+setInterval(()=>{
+
+let cloud=document.createElement("img")
+
+cloud.src="https://i.postimg.cc/9F5RcgGW/Titulo.png"
+
+cloud.className="cloud"
+
+cloud.style.top=(20+Math.random()*120)+"px"
+
+cloud.style.animationDuration=(25+Math.random()*20)+"s"
+
+document.getElementById("game").appendChild(cloud)
+
+setTimeout(()=>{cloud.remove()},50000)
+
+},5000)
+
+}
+
+function spawnBird(){
+
+setInterval(()=>{
+
+let bird=document.createElement("img")
+
+bird.src="https://i.postimg.cc/K8dpv2vq/Titulo-(1).png"
+
+bird.className="bird"
+
+bird.style.top=(80+Math.random()*120)+"px"
+
+bird.style.animationDuration=(10+Math.random()*6)+"s"
+
+document.getElementById("game").appendChild(bird)
+
+setTimeout(()=>{bird.remove()},20000)
+
+},7000)
+
+}
+
+function jump(){
+
+if(jumping)return
+
+jumpSound.currentTime=0
+jumpSound.play()
+
+jumping=true
+velocity=20
+
+}
+
+function collision(a,b){
+
+let aRect=a.getBoundingClientRect()
+let bRect=b.getBoundingClientRect()
+
+let paddingX=bRect.width*0.3
+let paddingY=bRect.height*0.3
+
+let bx1=bRect.left+paddingX
+let bx2=bRect.right-paddingX
+let by1=bRect.top+paddingY
+let by2=bRect.bottom-paddingY
+
+return !(
+
+aRect.right<bx1||
+aRect.left>bx2||
+aRect.bottom<by1||
+aRect.top>by2
+
+)
 
 }
 
@@ -234,28 +403,67 @@ function gameLoop(){
 
 if(!playing)return
 
-obstacles.forEach((o,i)=>{
+if(jumping){
 
-let top=o.offsetTop+speed
-o.style.top=top+"px"
+velocity-=gravity
 
-if(top>window.innerHeight){
-o.remove()
-obstacles.splice(i,1)
+let bottom=parseInt(player.style.bottom||120)
+
+bottom+=velocity
+
+if(bottom<=120){
+
+bottom=120
+jumping=false
+
 }
 
-let rect1=player.getBoundingClientRect()
-let rect2=o.getBoundingClientRect()
+player.style.bottom=bottom+"px"
 
-if(
-rect1.left<rect2.right &&
-rect1.right>rect2.left &&
-rect1.top<rect2.bottom &&
-rect1.bottom>rect2.top
-){
+}
 
-explode()
-gameOver()
+obstacles.forEach((o,i)=>{
+
+o.style.left=(o.offsetLeft-speed)+"px"
+
+if(o.offsetLeft<-100){
+
+o.remove()
+obstacles.splice(i,1)
+
+}
+
+if(collision(player,o)){
+
+hitSound.play()
+
+setTimeout(gameOver,10)
+
+}
+
+})
+
+coins.forEach((c,i)=>{
+
+c.style.left=(c.offsetLeft-speed)+"px"
+
+if(c.offsetLeft<-50){
+
+c.remove()
+coins.splice(i,1)
+
+}
+
+if(collision(player,c)){
+
+coinSound.play()
+
+coinScore++
+
+document.getElementById("coins").innerText=coinScore
+
+c.remove()
+coins.splice(i,1)
 
 }
 
@@ -265,85 +473,27 @@ requestAnimationFrame(gameLoop)
 
 }
 
-function explode(){
-
-let boom=document.createElement("img")
-boom.src="https://cdn-icons-png.flaticon.com/512/463/463612.png"
-boom.className="explosion"
-
-boom.style.left=player.offsetLeft+"px"
-boom.style.top=player.offsetTop+"px"
-
-game.appendChild(boom)
-
-setTimeout(()=>boom.remove(),600)
-
-}
-
 function gameOver(){
 
 playing=false
-lastScore=score
-
-if(score>record){
-record=score
-localStorage.setItem("record",record)
-}
 
 document.getElementById("finalScore").innerText=score
-document.getElementById("lastScore").innerText=lastScore
 
-document.getElementById("gameover").style.display="block"
-
-}
-
-function restart(){
-
-document.getElementById("gameover").style.display="none"
-document.getElementById("menu").style.display="block"
-
-obstacles.forEach(o=>o.remove())
-obstacles=[]
+document.getElementById("gameover").classList.add("show")
 
 }
 
 document.addEventListener("keydown",e=>{
 
-if(!playing)return
-
-let playerWidth = player.offsetWidth
-
-if(e.key=="ArrowLeft"){
-playerX -= 40
+if(e.code=="Space"||e.key=="ArrowUp"){
+jump()
 }
-
-if(e.key=="ArrowRight"){
-playerX += 40
-}
-
-let min = 0
-let max = window.innerWidth - playerWidth
-
-playerX = Math.max(min, Math.min(max, playerX))
-
-player.style.left = playerX + "px"
 
 })
 
-game.addEventListener("touchmove",e=>{
+document.addEventListener("touchstart",()=>{
 
-let touch = e.touches[0]
-
-let playerWidth = player.offsetWidth
-
-playerX = touch.clientX - (playerWidth/2)
-
-let min = 0
-let max = window.innerWidth - playerWidth
-
-playerX = Math.max(min, Math.min(max, playerX))
-
-player.style.left = playerX + "px"
+jump()
 
 })
 
