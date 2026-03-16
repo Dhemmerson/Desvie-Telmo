@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt">
+
 <head>
 
 <meta charset="UTF-8">
@@ -50,6 +51,7 @@ to{background-position-x:-80px}
 position:absolute;
 bottom:120px;
 font-size:50px;
+transform:scale(0.85);
 }
 
 .coin{
@@ -83,6 +85,14 @@ background:#ffffff50;
 padding:20px;
 border-radius:50%;
 z-index:5;
+}
+
+#fullscreenBtn{
+position:absolute;
+top:100px;
+right:20px;
+z-index:5;
+padding:10px 15px;
 }
 
 #shopBtn{
@@ -181,6 +191,8 @@ Recorde: <span id="bestScore">0</span>
 
 <div id="jumpBtn">⬆️</div>
 
+<button id="fullscreenBtn">⛶</button>
+
 <button id="shopBtn" onclick="openShop()">🛒 Loja</button>
 
 <div id="menu">
@@ -188,7 +200,7 @@ Recorde: <span id="bestScore">0</span>
 <h1>Escolha o personagem</h1>
 
 <div class="character" onclick="selectPlayer('telmo')">
-<img src="https://i.postimg.cc/ZKG0RzJ2/original-viko-(27).png">
+<img src="TELMO_NORMAL.png">
 <p>Telmo</p>
 </div>
 
@@ -198,21 +210,13 @@ Recorde: <span id="bestScore">0</span>
 
 <h1>Loja de Skins</h1>
 
-<div class="skin" onclick="selectPlayer('telmo')">
-Telmo Normal
-</div>
+<div class="skin" onclick="selectPlayer('telmo')">Telmo Normal</div>
 
-<div class="skin" onclick="selectPlayer('halloween')">
-Telmo Halloween
-</div>
+<div class="skin" onclick="selectPlayer('halloween')">Telmo Halloween</div>
 
-<div class="skin" onclick="selectPlayer('ferias')">
-Telmo Férias
-</div>
+<div class="skin" onclick="selectPlayer('ferias')">Telmo Férias</div>
 
-<div class="skin" onclick="selectPlayer('logo')">
-Logo
-</div>
+<div class="skin" onclick="selectPlayer('logo')">Logo</div>
 
 <button onclick="closeShop()">Fechar</button>
 
@@ -253,16 +257,16 @@ document.getElementById("bestScore").innerText=bestScore
 function selectPlayer(type){
 
 if(type=="telmo")
-player.src="https://i.postimg.cc/ZKG0RzJ2/original-viko-(27).png"
+player.src="TELMO_NORMAL.png"
 
 if(type=="halloween")
-player.src="https://i.postimg.cc/vB5yhhD9/original-viko-(28).png"
+player.src="TELMO_HALLOWEEN.png"
 
 if(type=="ferias")
-player.src="https://i.postimg.cc/5tTvL4Fm/original-viko-(29).png"
+player.src="TELMO_FERIAS.png"
 
 if(type=="logo")
-player.src="https://i.postimg.cc/xj71xVNq/original-viko-(29).png"
+player.src="LOGO.png"
 
 document.getElementById("menu").style.display="none"
 
@@ -345,7 +349,6 @@ function jump(){
 if(jumping)return
 
 jumping=true
-
 velocity=20
 
 }
@@ -355,12 +358,14 @@ function collision(a,b){
 let aRect=a.getBoundingClientRect()
 let bRect=b.getBoundingClientRect()
 
+let margin=15
+
 return !(
 
-aRect.right<bRect.left||
-aRect.left>bRect.right||
-aRect.bottom<bRect.top||
-aRect.top>bRect.bottom
+aRect.right-margin<bRect.left+margin||
+aRect.left+margin>bRect.right-margin||
+aRect.bottom-margin<bRect.top+margin||
+aRect.top+margin>bRect.bottom-margin
 
 )
 
@@ -457,6 +462,20 @@ jump()
 
 document.getElementById("jumpBtn").addEventListener("touchstart",jump)
 
+document.getElementById("fullscreenBtn").onclick=()=>{
+
+let el=document.documentElement
+
+if(el.requestFullscreen){
+el.requestFullscreen()
+}
+
+else if(el.webkitRequestFullscreen){
+el.webkitRequestFullscreen()
+}
+
+}
+
 function openShop(){
 
 document.getElementById("shop").style.display="flex"
@@ -473,4 +492,3 @@ document.getElementById("shop").style.display="none"
 
 </body>
 </html>
-
