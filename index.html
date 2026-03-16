@@ -4,6 +4,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta charset="UTF-8">
+
 <title>Telmo Runner</title>
 
 <style>
@@ -37,7 +38,6 @@ justify-content:center;
 gap:20px;
 color:white;
 z-index:10000;
-text-align:center;
 }
 
 #orientationMenu button{
@@ -115,6 +115,31 @@ from{transform:translateX(100vw)}
 to{transform:translateX(-200px)}
 }
 
+#hud{
+position:absolute;
+top:10px;
+left:10px;
+color:white;
+font-size:18px;
+}
+
+#record{
+position:absolute;
+top:10px;
+right:20px;
+color:white;
+}
+
+#jumpBtn{
+position:absolute;
+right:20px;
+bottom:140px;
+font-size:40px;
+background:#ffffff40;
+padding:15px;
+border-radius:50%;
+}
+
 #menu{
 position:absolute;
 top:50%;
@@ -139,12 +164,30 @@ transform:scale(1.2);
 width:120px;
 }
 
-#hud{
+#shopBtn{
 position:absolute;
-top:10px;
-left:10px;
+top:60px;
+right:20px;
+}
+
+#shop{
+position:absolute;
+top:50%;
+left:50%;
+transform:translate(-50%,-50%);
+background:#000000dd;
+padding:30px;
 color:white;
-font-size:18px;
+display:none;
+text-align:center;
+border-radius:10px;
+}
+
+.skin{
+margin:10px;
+padding:10px;
+background:#ffffff20;
+cursor:pointer;
 }
 
 #gameover{
@@ -173,32 +216,6 @@ font-size:18px;
 cursor:pointer;
 }
 
-#rotate{
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-background:#000;
-color:white;
-display:none;
-align-items:center;
-justify-content:center;
-text-align:center;
-font-size:22px;
-z-index:9999;
-}
-
-.rotate-box{
-animation:giro 2s infinite;
-}
-
-@keyframes giro{
-0%{transform:rotate(0)}
-50%{transform:rotate(90deg)}
-100%{transform:rotate(0)}
-}
-
 </style>
 
 </head>
@@ -209,27 +226,8 @@ animation:giro 2s infinite;
 
 <h1>Como deseja jogar?</h1>
 
-<button onclick="setOrientation('horizontal')">
-📱 Horizontal
-</button>
-
-<button onclick="setOrientation('vertical')">
-📱 Vertical
-</button>
-
-</div>
-
-<div id="rotate">
-
-<div class="rotate-box">
-
-📱  
-<br><br>
-<strong>Gire o celular</strong>
-<br>
-para jogar no modo horizontal
-
-</div>
+<button onclick="setOrientation('horizontal')">📱 Horizontal</button>
+<button onclick="setOrientation('vertical')">📱 Vertical</button>
 
 </div>
 
@@ -244,6 +242,26 @@ Score: <span id="score">0</span><br>
 Moedas: <span id="coins">0</span>
 </div>
 
+<div id="record">
+Recorde: <span id="bestScore">0</span>
+</div>
+
+<div id="jumpBtn">⬆️</div>
+
+<button id="shopBtn" onclick="openShop()">🛒 Loja</button>
+
+<div id="shop">
+
+<h2>Loja</h2>
+
+<div class="skin" onclick="buySkin('ninja',50)">🥷 Ninja - 50</div>
+<div class="skin" onclick="buySkin('robot',80)">🤖 Robô - 80</div>
+<div class="skin" onclick="buySkin('alien',120)">👽 Alien - 120</div>
+
+<button onclick="closeShop()">Fechar</button>
+
+</div>
+
 <div id="menu">
 
 <h1>Escolha o Personagem</h1>
@@ -251,21 +269,6 @@ Moedas: <span id="coins">0</span>
 <div class="character" onclick="selectPlayer('telmo')">
 <img src="https://i.postimg.cc/ZKG0RzJ2/original-viko-(27).png">
 <div>Telmo</div>
-</div>
-
-<div class="character" onclick="selectPlayer('logo')">
-<img src="https://i.postimg.cc/xj71xVNq/original-viko-(29).png">
-<div>Logo</div>
-</div>
-
-<div class="character" onclick="selectPlayer('halloween')">
-<img src="https://i.postimg.cc/vB5yhhD9/original-viko-(28).png">
-<div>Telmo Halloween</div>
-</div>
-
-<div class="character" onclick="selectPlayer('ferias')">
-<img src="https://i.postimg.cc/5tTvL4Fm/original-viko-(29).png">
-<div>Telmo Férias</div>
 </div>
 
 </div>
@@ -289,32 +292,9 @@ let orientationMode="horizontal"
 function setOrientation(mode){
 
 orientationMode=mode
-
 document.getElementById("orientationMenu").style.display="none"
 
-checkOrientation()
-
 }
-
-function checkOrientation(){
-
-if(orientationMode==="horizontal"){
-
-if(window.innerHeight > window.innerWidth){
-document.getElementById("rotate").style.display="flex"
-}else{
-document.getElementById("rotate").style.display="none"
-}
-
-}else{
-
-document.getElementById("rotate").style.display="none"
-
-}
-
-}
-
-window.addEventListener("resize",checkOrientation)
 
 let player=document.getElementById("player")
 
@@ -331,29 +311,20 @@ let coins=[]
 
 let playing=false
 
+let bestScore = localStorage.getItem("telmoRecord") || 0
+document.getElementById("bestScore").innerText = bestScore
+
+let totalCoins = localStorage.getItem("telmoCoins") || 0
+let ownedSkins = JSON.parse(localStorage.getItem("telmoSkins")) || []
+
 const jumpSound=new Audio("https://assets.mixkit.co/sfx/preview/mixkit-quick-jump-arcade-game-239.mp3")
 const hitSound=new Audio("https://assets.mixkit.co/sfx/preview/mixkit-arcade-retro-game-over-213.mp3")
 const coinSound=new Audio("https://assets.mixkit.co/sfx/preview/mixkit-game-ball-tap-2073.mp3")
 
-function selectPlayer(p){
+function selectPlayer(){
 
 document.getElementById("menu").style.display="none"
-
-if(p=="telmo"){
 player.src="https://i.postimg.cc/ZKG0RzJ2/original-viko-(27).png"
-}
-
-if(p=="logo"){
-player.src="https://i.postimg.cc/xj71xVNq/original-viko-(29).png"
-}
-
-if(p=="halloween"){
-player.src="https://i.postimg.cc/vB5yhhD9/original-viko-(28).png"
-}
-
-if(p=="ferias"){
-player.src="https://i.postimg.cc/5tTvL4Fm/original-viko-(29).png"
-}
 
 startGame()
 
@@ -365,14 +336,14 @@ playing=true
 
 spawnObstacle()
 spawnCoin()
-spawnCloud()
-spawnBird()
 
 setInterval(()=>{
 
 if(!playing)return
 
 score+=10
+speed+=0.1
+
 document.getElementById("score").innerText=score
 
 },1000)
@@ -396,7 +367,7 @@ o.innerText=emojis[Math.floor(Math.random()*emojis.length)]
 
 o.style.left=window.innerWidth+"px"
 
-document.getElementById("game").appendChild(o)
+game.appendChild(o)
 
 obstacles.push(o)
 
@@ -425,55 +396,11 @@ c.className="coin"
 c.style.left=window.innerWidth+"px"
 c.style.bottom=(170+Math.random()*120)+"px"
 
-document.getElementById("game").appendChild(c)
+game.appendChild(c)
 
 coins.push(c)
 
 },2000)
-
-}
-
-function spawnCloud(){
-
-setInterval(()=>{
-
-let cloud=document.createElement("img")
-
-cloud.src="https://i.postimg.cc/9F5RcgGW/Titulo.png"
-
-cloud.className="cloud"
-
-cloud.style.top=(20+Math.random()*120)+"px"
-
-cloud.style.animationDuration=(25+Math.random()*20)+"s"
-
-document.getElementById("game").appendChild(cloud)
-
-setTimeout(()=>{cloud.remove()},50000)
-
-},5000)
-
-}
-
-function spawnBird(){
-
-setInterval(()=>{
-
-let bird=document.createElement("img")
-
-bird.src="https://i.postimg.cc/K8dpv2vq/Titulo-(1).png"
-
-bird.className="bird"
-
-bird.style.top=(80+Math.random()*120)+"px"
-
-bird.style.animationDuration=(10+Math.random()*6)+"s"
-
-document.getElementById("game").appendChild(bird)
-
-setTimeout(()=>{bird.remove()},20000)
-
-},7000)
 
 }
 
@@ -494,20 +421,12 @@ function collision(a,b){
 let aRect=a.getBoundingClientRect()
 let bRect=b.getBoundingClientRect()
 
-let paddingX=bRect.width*0.3
-let paddingY=bRect.height*0.3
-
-let bx1=bRect.left+paddingX
-let bx2=bRect.right-paddingX
-let by1=bRect.top+paddingY
-let by2=bRect.bottom-paddingY
-
 return !(
 
-aRect.right<bx1||
-aRect.left>bx2||
-aRect.bottom<by1||
-aRect.top>by2
+aRect.right<bRect.left||
+aRect.left>bRect.right||
+aRect.bottom<bRect.top||
+aRect.top>bRect.bottom
 
 )
 
@@ -550,7 +469,6 @@ obstacles.splice(i,1)
 if(collision(player,o)){
 
 hitSound.play()
-
 setTimeout(gameOver,10)
 
 }
@@ -573,6 +491,9 @@ if(collision(player,c)){
 coinSound.play()
 
 coinScore++
+totalCoins++
+
+localStorage.setItem("telmoCoins",totalCoins)
 
 document.getElementById("coins").innerText=coinScore
 
@@ -593,6 +514,15 @@ playing=false
 
 document.getElementById("finalScore").innerText=score
 
+if(score>bestScore){
+
+bestScore=score
+localStorage.setItem("telmoRecord",bestScore)
+
+}
+
+document.getElementById("bestScore").innerText=bestScore
+
 document.getElementById("gameover").classList.add("show")
 
 }
@@ -605,11 +535,45 @@ jump()
 
 })
 
-document.addEventListener("touchstart",()=>{
-jump()
-})
+document.getElementById("jumpBtn").addEventListener("click",jump)
+
+function openShop(){
+document.getElementById("shop").style.display="block"
+}
+
+function closeShop(){
+document.getElementById("shop").style.display="none"
+}
+
+function buySkin(name,price){
+
+if(totalCoins<price){
+
+alert("Moedas insuficientes")
+return
+
+}
+
+if(ownedSkins.includes(name)){
+
+alert("Você já possui")
+return
+
+}
+
+totalCoins-=price
+
+ownedSkins.push(name)
+
+localStorage.setItem("telmoCoins",totalCoins)
+localStorage.setItem("telmoSkins",JSON.stringify(ownedSkins))
+
+alert("Skin desbloqueada!")
+
+}
 
 </script>
 
 </body>
 </html>
+
